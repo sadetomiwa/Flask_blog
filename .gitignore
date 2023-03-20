@@ -1,0 +1,8 @@
+# Ignore the virtual enviroment 
+venv/
+
+# Also ignore the __pycache__  
+__pycache__/
+
+# If on mac, you can also add the ds.store
+.DS_Store
