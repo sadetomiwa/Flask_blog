@@ -6,3 +6,6 @@ __pycache__/
 
 # If on mac, you can also add the ds.store
 .DS_Store
+
+
+.env
