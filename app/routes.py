@@ -1,8 +1,9 @@
 from app import app, db
 from flask import render_template, redirect, url_for, flash
 from fake_data import posts
-from app.forms import SignUpForm, LoginForm
+from app.forms import SignUpForm, LoginForm, PostForm
 from app.models import User
+from flask_login import login_user, logout_user
 
 @app.route('/')
 def index():
@@ -47,6 +48,7 @@ def login():
         # TODO: Check if there is a user with username and that password
         user = User.query.filter_by(username=username).first()
         if user is not None and user.check_password(password):
+            login_user(user)
             flash(f'You have successfully logged in as {username}', 'success')
             return redirect(url_for('index'))
         else:
@@ -54,3 +56,17 @@ def login():
             return redirect(url_for('login'))
 
     return render_template('login.html', form=form)
+
+
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    flash('You have successfully logged out', 'info')
+    return redirect(url_for('index'))
+
+
+@app.route('/create')
+def create_post():
+    form = PostForm()
+    return render_template('create.html', form=form)
