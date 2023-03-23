@@ -3,7 +3,7 @@ from flask import render_template, redirect, url_for, flash
 from fake_data import posts
 from app.forms import SignUpForm, LoginForm, PostForm
 from app.models import User
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user, login_required
 
 @app.route('/')
 def index():
@@ -66,7 +66,15 @@ def logout():
     return redirect(url_for('index'))
 
 
-@app.route('/create')
+@app.route('/create', methods=["GET", "POST"])
+@login_required
 def create_post():
     form = PostForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        body = form.body.data
+        image_url = form.image_url.data
+        print(title, body, image_url)
+        flash('Your post has been created', 'success')
+        return redirect(url_for('index'))
     return render_template('create.html', form=form)
