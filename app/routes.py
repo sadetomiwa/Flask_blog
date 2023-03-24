@@ -1,13 +1,18 @@
 from app import app, db
 from flask import render_template, redirect, url_for, flash
-from fake_data import posts
-from app.forms import SignUpForm, LoginForm, PostForm
+# from fake_data import posts
+from app.forms import SignUpForm, LoginForm, PostForm, SearchForm
 from app.models import User, Post
 from flask_login import login_user, logout_user, login_required, current_user
 
-@app.route('/')
+@app.route('/', methods= ['GET', 'POST'])
 def index():
-    return render_template('index.html', posts=posts, logged_in=False)
+    posts = Post.query.all()
+    form = SearchForm()
+    if form.validate_on_submit():
+        search_term = form.search.data
+        posts = db.session.execute(db.select(Post).where(Post.title.ilike(f"%{search_term}%"))).scalars().all()
+    return render_template('index.html', posts=posts, form=form)
 
 
 @app.route('/signup', methods=["GET", "POST"])
@@ -78,3 +83,42 @@ def create_post():
         flash(f'{new_post.title} has been created!', 'success')
         return redirect(url_for('index'))
     return render_template('create.html', form=form)
+
+
+@app.route('/edit/<post_id>', methods=["GET", "POST"])
+def edit_post(post_id):
+    form = PostForm()
+    post_to_edit = Post.query.get_or_404(post_id)
+    #make sure that the post author is the current user
+    if post_to_edit.user_id != current_user:
+        flash('You are not authorized to edit this post', 'danger')
+        return redirect(url_for('index'))
+    #if form submitted, update Post
+    if form.validate_on_submit():
+        post_to_edit.title = form.title.data
+        post_to_edit.body = form.body.data
+        post_to_edit.image_url = form.image_url.data
+        #Commit that to the database
+        db.session.commit()
+        flash(f'{post_to_edit.title} has been updated!', 'success')
+        return redirect(url_for('index'))
+
+    #prepopulate the form with Post to edit values
+    form.title.data = post_to_edit.title
+    form.body.data = post_to_edit.body
+    form.image_url.data = post_to_edit.image_url
+    return render_template('edit.html', form =form , post=post_to_edit)
+
+
+
+@app.route('/delete/<post_id>')
+def delete_post(post_id):
+    post_to_delete = Post.query.get_or_404(post_id)
+    #make sure that the post author is the current user
+    if post_to_delete.author != current_user:
+        flash('You are not authorized to delete this post', 'danger')
+        return redirect(url_for('index'))
+    db.session.delete(post_to_delete)
+    db.session.commit()
+    flash(f'{post_to_delete.title} has been deleted!', 'info')
+    return redirect(url_for('index'))
